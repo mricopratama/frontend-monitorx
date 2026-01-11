@@ -7,7 +7,6 @@ import { apiClient } from './client';
 import {
   Alert,
   AlertQueryParams,
-  AlertStatus,
   UpdateAlertRequest,
   PaginatedResponse,
 } from '@/lib/types/api';
@@ -17,7 +16,16 @@ export const alertService = {
    * Get all alerts with optional filters
    */
   async getAll(params?: AlertQueryParams): Promise<PaginatedResponse<Alert>> {
-    return await apiClient.get<PaginatedResponse<Alert>>('/alerts', params);
+    const data = await apiClient.get<any>('/alerts', params);
+    // Backend returns PaginatedAlerts with 'data' and 'limit' fields
+    // Map to frontend format with 'items' and 'page_size'
+    return {
+      items: data.data || [],
+      total: data.total || 0,
+      page: data.page || 1,
+      page_size: data.limit || 20,
+      total_pages: data.total_pages || 1,
+    };
   },
 
   /**
@@ -35,17 +43,17 @@ export const alertService = {
   },
 
   /**
-   * Mark alert as read
+   * Mark alert as read using dedicated endpoint
    */
-  async markAsRead(id: string): Promise<Alert> {
-    return this.update(id, { is_read: true });
+  async markAsRead(id: string): Promise<void> {
+    await apiClient.put<void>(`/alerts/${id}/read`, {});
   },
 
   /**
-   * Mark alert as resolved
+   * Mark alert as resolved using dedicated endpoint
    */
-  async resolve(id: string): Promise<Alert> {
-    return this.update(id, { status: AlertStatus.RESOLVED });
+  async resolve(id: string): Promise<void> {
+    await apiClient.put<void>(`/alerts/${id}/resolve`, {});
   },
 
   /**

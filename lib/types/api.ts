@@ -128,35 +128,38 @@ export interface MonitoringLog {
 // ============================================================================
 
 export enum AlertSeverity {
-  INFO = 'info',
-  WARNING = 'warning',
-  ERROR = 'error',
-  CRITICAL = 'critical',
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
 }
 
-export enum AlertStatus {
-  ACTIVE = 'active',
-  RESOLVED = 'resolved',
-  ACKNOWLEDGED = 'acknowledged',
+export enum AlertType {
+  WEBSITE_DOWN = 'website_down',
+  SLOW_RESPONSE = 'slow_response',
+  CONSECUTIVE_FAILURES = 'consecutive_failures',
+  SSL_EXPIRY = 'ssl_expiry',
 }
 
 export interface Alert {
   id: string;
   website_id: string;
-  website_name?: string;
+  user_id: string;
+  type: AlertType;
   severity: AlertSeverity;
-  status: AlertStatus;
   message: string;
-  triggered_at: string;
-  resolved_at?: string;
   is_read: boolean;
+  is_resolved: boolean;
+  triggered_at: string;
+  read_at?: string;
+  resolved_at?: string;
   created_at: string;
-  updated_at: string;
+  website_name?: string;
+  website_url?: string;
 }
 
 export interface UpdateAlertRequest {
-  status?: AlertStatus;
   is_read?: boolean;
+  is_resolved?: boolean;
 }
 
 // ============================================================================
@@ -188,17 +191,6 @@ export interface PerformanceData {
   min_response_time: number;
   max_response_time: number;
   total_requests: number;
-}
-
-export interface WebsiteAnalytics {
-  website_id: string;
-  uptime_percentage: number;
-  average_response_time: number;
-  total_checks: number;
-  failed_checks: number;
-  last_24h_data: PerformanceData[];
-  last_7d_uptime: number;
-  last_30d_uptime: number;
 }
 
 // ============================================================================
@@ -249,7 +241,8 @@ export interface MonitoringLogParams extends PaginationParams {
 }
 
 export interface AlertQueryParams extends PaginationParams {
+  website_id?: string;
   severity?: AlertSeverity;
-  status?: AlertStatus;
   is_read?: boolean;
+  is_resolved?: boolean;
 }

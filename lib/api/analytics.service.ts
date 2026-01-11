@@ -8,7 +8,6 @@ import {
   DashboardSummary,
   UptimeData,
   PerformanceData,
-  WebsiteAnalytics,
 } from '@/lib/types/api';
 
 export const analyticsService = {
@@ -33,27 +32,10 @@ export const analyticsService = {
    * Get performance data for a specific website
    */
   async getPerformance(params: {
-    website_id: string;
+    website_id?: string;
     start_date?: string;
     end_date?: string;
-    interval?: 'hour' | 'day' | 'week';
   }): Promise<PerformanceData[]> {
     return await apiClient.get<PerformanceData[]>('/analytics/performance', params);
-  },
-
-  /**
-   * Get comprehensive analytics for a website
-   */
-  async getWebsiteAnalytics(websiteId: string): Promise<WebsiteAnalytics> {
-    return await apiClient.get<WebsiteAnalytics>(`/analytics/websites/${websiteId}`);
-  },
-
-  /**
-   * Get response time trends
-   */
-  async getResponseTimeTrends(params?: {
-    period?: '24h' | '7d' | '30d';
-  }): Promise<PerformanceData[]> {
-    return await apiClient.get<PerformanceData[]>('/analytics/trends/response-time', params);
   },
 };

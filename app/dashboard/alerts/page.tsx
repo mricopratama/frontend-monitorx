@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Loader2, AlertCircle, CheckCircle, AlertTriangle, XCircle } from "lucide-react"
 import { alertService } from "@/lib/api"
-import { Alert, AlertSeverity, AlertStatus } from "@/lib/types/api"
+import { Alert, AlertSeverity } from "@/lib/types/api"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 
@@ -11,7 +11,7 @@ export default function AlertsPage() {
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [filter, setFilter] = useState<"all" | AlertSeverity | AlertStatus>("all")
+  const [filter, setFilter] = useState<"all" | "unread" | "resolved" | "unresolved" | AlertSeverity>("all")
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
@@ -28,8 +28,12 @@ export default function AlertsPage() {
       if (filter !== "all") {
         if (Object.values(AlertSeverity).includes(filter as AlertSeverity)) {
           params.severity = filter
-        } else if (Object.values(AlertStatus).includes(filter as AlertStatus)) {
-          params.status = filter
+        } else if (filter === "unread") {
+          params.is_read = false
+        } else if (filter === "resolved") {
+          params.is_resolved = true
+        } else if (filter === "unresolved") {
+          params.is_resolved = false
         }
       }
 
@@ -64,35 +68,35 @@ export default function AlertsPage() {
 
   const getSeverityIcon = (severity: AlertSeverity) => {
     switch (severity) {
-      case AlertSeverity.CRITICAL:
+      case AlertSeverity.HIGH:
         return <XCircle className="w-5 h-5 text-red-500" />
-      case AlertSeverity.ERROR:
-        return <AlertCircle className="w-5 h-5 text-red-400" />
-      case AlertSeverity.WARNING:
+      case AlertSeverity.MEDIUM:
         return <AlertTriangle className="w-5 h-5 text-yellow-500" />
-      default:
+      case AlertSeverity.LOW:
         return <CheckCircle className="w-5 h-5 text-blue-500" />
+      default:
+        return <AlertCircle className="w-5 h-5 text-gray-500" />
     }
   }
 
   const getSeverityColor = (severity: AlertSeverity) => {
     switch (severity) {
-      case AlertSeverity.CRITICAL:
+      case AlertSeverity.HIGH:
         return "bg-red-900/30 text-red-400"
-      case AlertSeverity.ERROR:
-        return "bg-red-800/30 text-red-300"
-      case AlertSeverity.WARNING:
+      case AlertSeverity.MEDIUM:
         return "bg-yellow-900/30 text-yellow-400"
-      default:
+      case AlertSeverity.LOW:
         return "bg-blue-900/30 text-blue-400"
+      default:
+        return "bg-gray-900/30 text-gray-400"
     }
   }
 
   const stats = {
     total: alerts?.length || 0,
-    critical: alerts?.filter((a) => a.severity === AlertSeverity.CRITICAL).length || 0,
+    high: alerts?.filter((a) => a.severity === AlertSeverity.HIGH).length || 0,
     unread: alerts?.filter((a) => !a.is_read).length || 0,
-    unresolved: alerts?.filter((a) => a.status !== AlertStatus.RESOLVED).length || 0,
+    unresolved: alerts?.filter((a) => !a.is_resolved).length || 0,
   }
 
   if (loading && page === 1) {
@@ -116,8 +120,8 @@ export default function AlertsPage() {
           <p className="text-3xl font-bold">{stats.total}</p>
         </div>
         <div className="bg-card border rounded-lg p-4">
-          <p className="text-xs text-muted-foreground font-semibold mb-2">Critical</p>
-          <p className="text-3xl font-bold text-red-500">{stats.critical}</p>
+          <p className="text-xs text-muted-foreground font-semibold mb-2">High Severity</p>
+          <p className="text-3xl font-bold text-red-500">{stats.high}</p>
         </div>
         <div className="bg-card border rounded-lg p-4">
           <p className="text-xs text-muted-foreground font-semibold mb-2">Unread</p>
@@ -139,14 +143,14 @@ export default function AlertsPage() {
 
       <div className="bg-card border rounded-lg p-6">
         <div className="flex gap-2 mb-4">
-          {["all", AlertSeverity.CRITICAL, AlertSeverity.WARNING, AlertStatus.ACTIVE, AlertStatus.RESOLVED].map((f) => (
+          {["all", "unread", "unresolved", "resolved", AlertSeverity.HIGH, AlertSeverity.MEDIUM, AlertSeverity.LOW].map((f) => (
             <Button
               key={f}
               variant={filter === f ? "default" : "outline"}
               size="sm"
               onClick={() => { setFilter(f as any); setPage(1); }}
             >
-              {f.toUpperCase()}
+              {f.toString().toUpperCase()}
             </Button>
           ))}
         </div>
@@ -183,7 +187,7 @@ export default function AlertsPage() {
                         Mark Read
                       </Button>
                     )}
-                    {alert.status !== AlertStatus.RESOLVED && (
+                    {!alert.is_resolved && (
                       <Button variant="ghost" size="sm" onClick={() => handleResolve(alert.id)}>
                         Resolve
                       </Button>

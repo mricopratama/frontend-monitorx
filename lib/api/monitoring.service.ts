@@ -16,12 +16,13 @@ export const monitoringService = {
    */
   async getLogs(params: MonitoringLogParams): Promise<PaginatedResponse<MonitoringLog>> {
     const data = await apiClient.get<any>(`/logs`, params);
-    // Backend returns PaginatedResults, wrap it in PaginatedResponse format
+    // Backend returns PaginatedResults with 'data' and 'limit' fields
+    // Map to frontend format with 'items' and 'page_size'
     return {
-      items: data.results || [],
+      items: data.data || [],
       total: data.total || 0,
       page: data.page || 1,
-      page_size: data.page_size || 50,
+      page_size: data.limit || 20,
       total_pages: data.total_pages || 1,
     };
   },

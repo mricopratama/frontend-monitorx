@@ -10,6 +10,7 @@ import {
   UpdateWebsiteRequest,
   PaginatedResponse,
   PaginationParams,
+  MonitoringLog,
 } from '@/lib/types/api';
 
 export const websiteService = {
@@ -57,14 +58,9 @@ export const websiteService = {
   },
 
   /**
-   * Get website statistics
+   * Get monitoring logs for a specific website
    */
-  async getStats(id: string | number): Promise<{
-    uptime_percentage: number;
-    average_response_time: number;
-    total_checks: number;
-    failed_checks: number;
-  }> {
-    return await apiClient.get(`/websites/${id}/stats`);
+  async getLogs(id: string | number, params?: { limit?: number }): Promise<MonitoringLog[]> {
+    return await apiClient.get<MonitoringLog[]>(`/websites/${id}/logs`, params);
   },
 };
