@@ -43,12 +43,13 @@ export default function SettingsPage() {
     setSuccess(null)
 
     try {
-      // In a real app, you would call an update profile API endpoint
-      // For now, we'll just show success
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await authService.updateProfile(profileForm)
       setSuccess("Profile updated successfully")
+      
+      // Optionally reload user data from context
+      setTimeout(() => setSuccess(null), 3000)
     } catch (err: any) {
-      setError(err.message || "Failed to update profile")
+      setError(err.response?.data?.message || err.message || "Failed to update profile")
     } finally {
       setLoading(false)
     }
@@ -66,24 +67,28 @@ export default function SettingsPage() {
       return
     }
 
-    if (passwordForm.newPassword.length < 6) {
-      setError("Password must be at least 6 characters")
+    if (passwordForm.newPassword.length < 8) {
+      setError("Password must be at least 8 characters")
       setLoading(false)
       return
     }
 
     try {
-      // In a real app, you would call a change password API endpoint
-      // For now, we'll just show success
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await authService.changePassword({
+        current_password: passwordForm.currentPassword,
+        new_password: passwordForm.newPassword,
+      })
+      
       setSuccess("Password changed successfully")
       setPasswordForm({
         currentPassword: "",
         newPassword: "",
         confirmPassword: ""
       })
+      
+      setTimeout(() => setSuccess(null), 3000)
     } catch (err: any) {
-      setError(err.message || "Failed to change password")
+      setError(err.response?.data?.message || err.message || "Failed to change password")
     } finally {
       setLoading(false)
     }

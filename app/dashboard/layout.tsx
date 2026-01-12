@@ -2,11 +2,12 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Search, Settings, Bell, Menu, X, Sun, Moon, Monitor } from "lucide-react"
-import { Suspense } from "react"
+import { ErrorBoundary } from "@/components/error-boundary"
+import { LoadingFallback } from "@/components/loading-fallback"
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -122,7 +123,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-auto">{children}</div>
+        <div className="flex-1 overflow-auto">
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback message="Loading content..." />}>
+              {children}
+            </Suspense>
+          </ErrorBoundary>
+        </div>
       </div>
     </div>
   )
@@ -134,9 +141,11 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <DashboardContent>{children}</DashboardContent>
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingFallback fullScreen message="Loading dashboard..." />}>
+        <DashboardContent>{children}</DashboardContent>
+      </Suspense>
+    </ErrorBoundary>
   )
 }
 

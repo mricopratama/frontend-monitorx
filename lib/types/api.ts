@@ -57,6 +57,16 @@ export interface AuthResponse {
   expires_in: number;
 }
 
+export interface UpdateProfileRequest {
+  name?: string;
+  email?: string;
+}
+
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
 // ============================================================================
 // Website Types
 // ============================================================================
@@ -74,12 +84,17 @@ export interface Website {
   name: string;
   url: string;
   monitoring_interval: number;
+  check_interval?: number;
   timeout_threshold: number;
   status: WebsiteStatus;
   last_checked_at?: string;
+  last_check?: string;
   last_response_time?: number;
   last_status_code?: number;
   uptime_percentage?: number;
+  alert_threshold?: number;
+  notification_enabled?: boolean;
+  region?: string;
   created_at: string;
   updated_at: string;
 }
@@ -131,6 +146,7 @@ export enum AlertSeverity {
   LOW = 'low',
   MEDIUM = 'medium',
   HIGH = 'high',
+  CRITICAL = 'critical',
 }
 
 export enum AlertType {

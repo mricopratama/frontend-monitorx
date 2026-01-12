@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { analyticsService, websiteService, alertService } from '@/lib/api';
 import { useWebSocket } from '@/lib/hooks';
+import { Alert, AlertSeverity } from '@/lib/types/api';
 import { ProtectedRoute } from '@/components/protected-route';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -284,11 +285,9 @@ export default function DashboardPage() {
                   >
                     <AlertTriangle
                       className={`w-5 h-5 mt-0.5 ${
-                        alert.severity === 'critical'
+                        alert.severity === AlertSeverity.CRITICAL || alert.severity === AlertSeverity.HIGH
                           ? 'text-red-600'
-                          : alert.severity === 'error'
-                          ? 'text-orange-600'
-                          : alert.severity === 'warning'
+                          : alert.severity === AlertSeverity.MEDIUM
                           ? 'text-yellow-600'
                           : 'text-blue-600'
                       }`}
@@ -301,12 +300,12 @@ export default function DashboardPage() {
                     </div>
                     <span
                       className={`px-2 py-1 text-xs rounded ${
-                        alert.status === 'active'
+                        !alert.is_resolved
                           ? 'bg-red-100 text-red-700'
                           : 'bg-green-100 text-green-700'
                       }`}
                     >
-                      {alert.status}
+                      {alert.is_resolved ? 'Resolved' : 'Active'}
                     </span>
                   </div>
                 ))}

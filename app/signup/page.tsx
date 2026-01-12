@@ -7,24 +7,30 @@ import { useState, useEffect } from "react"
 import { Mail, Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { registerSchema, type RegisterFormData } from "@/lib/validations/schemas"
 
 export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  })
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [error, setError] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
   
-  const { register } = useAuth()
+  const { register: authRegister } = useAuth()
   const router = useRouter()
-  const password = formData.password
   const [chartHeights, setChartHeights] = useState<number[]>([])
+  
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+  })
+  
+  const password = watch("password", "")
   
   // Generate chart heights only on client side to avoid hydration mismatch
   useEffect(() => {
@@ -47,44 +53,24 @@ export default function SignUp() {
   const strengthText =
     strength === 0 ? "" : strength <= 1 ? "Weak" : strength <= 2 ? "Medium" : strength <= 3 ? "Strong" : "Very strong"
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const onSubmit = async (data: RegisterFormData) => {
     setError("")
-
-    // Validation
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-      setError("All fields are required")
-      return
-    }
 
     if (!agreedToTerms) {
       setError("You must agree to the Terms of Service and Privacy Policy")
       return
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match")
-      return
-    }
-
-    if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters")
-      return
-    }
-
-    setIsLoading(true)
     try {
-      await register({
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
+      await authRegister({
+        name: data.name,
+        email: data.email,
+        password: data.password,
       })
       // Redirect to dashboard on success
       router.push("/dashboard")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create account")
-    } finally {
-      setIsLoading(false)
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || "Registration failed. Please try again.")
     }
   }
 
@@ -204,7 +190,7 @@ export default function SignUp() {
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               {error && (
                 <div className="bg-red-500/10 border border-red-500/50 text-red-500 px-4 py-3 rounded-lg text-sm">
                   {error}
@@ -212,14 +198,18 @@ export default function SignUp() {
               )}
 
               <div>
-                <label className="block text-sm font-medium mb-2">Full Name</label>
+                <label className="block text-sm font-medium mb-2">
+                  Full Name <span className="text-red-500">*</span>
+                </label>
                 <Input 
                   placeholder="e.g Jane Doe" 
-                  className="h-11 bg-card border-border/50"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  disabled={isLoading}
+                  className={`h-11 bg-card border-border/50 ${errors.name ? 'border-destructive' : ''}`}
+                  disabled={isSubmitting}
+                  {...register("name")}
                 />
+                {errors.name && (
+                  <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
+                )}
               </div>
 
               <div>
@@ -231,33 +221,40 @@ export default function SignUp() {
                   <Input 
                     type="email"
                     placeholder="jane@company.com" 
-                    className="h-11 pl-10 bg-card border-border/50"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    disabled={isLoading}
+                    className={`h-11 pl-10 bg-card border-border/50 ${errors.email ? 'border-destructive' : ''}`}
+                    disabled={isSubmitting}
+                    {...register("email")}
                   />
                 </div>
+                {errors.email && (
+                  <p className="text-sm text-destructive mt-1">{errors.email.message}</p>
+                )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Password</label>
+                <label className="block text-sm font-medium mb-2">
+                  Password <span className="text-red-500">*</span>
+                </label>
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="h-11 pr-10 bg-card border-border/50"
-                    disabled={isLoading}
+                    className={`h-11 pr-10 bg-card border-border/50 ${errors.password ? 'border-destructive' : ''}`}
+                    disabled={isSubmitting}
+                    {...register("password")}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    disabled={isSubmitting}
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                {errors.password && (
+                  <p className="text-sm text-destructive mt-1">{errors.password.message}</p>
+                )}
                 {password && (
                   <div className="mt-2">
                     <div className="flex items-center justify-between mb-1">
@@ -276,24 +273,29 @@ export default function SignUp() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Confirm Password</label>
+                <label className="block text-sm font-medium mb-2">
+                  Confirm Password <span className="text-red-500">*</span>
+                </label>
                 <div className="relative">
                   <Input 
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="••••••••" 
-                    className="h-11 pr-10 bg-card border-border/50"
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    disabled={isLoading}
+                    className={`h-11 pr-10 bg-card border-border/50 ${errors.confirmPassword ? 'border-destructive' : ''}`}
+                    disabled={isSubmitting}
+                    {...register("confirmPassword")}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    disabled={isSubmitting}
                   >
                     {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                {errors.confirmPassword && (
+                  <p className="text-sm text-destructive mt-1">{errors.confirmPassword.message}</p>
+                )}
               </div>
 
               <div className="flex items-start gap-3">
@@ -303,7 +305,7 @@ export default function SignUp() {
                   className="mt-1"
                   checked={agreedToTerms}
                   onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                 />
                 <label htmlFor="terms" className="text-sm text-muted-foreground">
                   I agree to the{" "}
@@ -321,9 +323,9 @@ export default function SignUp() {
               <Button 
                 type="submit"
                 className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-base font-semibold"
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
-                {isLoading ? (
+                {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Creating Account...

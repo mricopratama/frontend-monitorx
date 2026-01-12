@@ -9,4 +9,8 @@ export { monitoringService } from './monitoring.service';
 export { alertService } from './alert.service';
 export { analyticsService } from './analytics.service';
 export { healthService } from './health.service';
+export { exportService } from './export.service';
+export { tagService } from './tag.service';
+
+export type { Tag, TagWithCount, CreateTagRequest, UpdateTagRequest } from './tag.service';
 export { apiClient } from './client';

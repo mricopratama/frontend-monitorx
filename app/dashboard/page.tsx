@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { AlertCircle, CheckCircle, AlertTriangle, Plus, Loader2 } from "lucide-react"
 import { analyticsService, websiteService, alertService } from "@/lib/api"
-import { DashboardSummary, Website, Alert, PerformanceData, WebsiteStatus } from "@/lib/types/api"
+import { DashboardSummary, Website, Alert, PerformanceData, WebsiteStatus, AlertSeverity } from "@/lib/types/api"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useWebSocket } from "@/lib/hooks/use-websocket"
@@ -61,7 +61,6 @@ export default function DashboardPage() {
         try {
           const performanceResult = await analyticsService.getPerformance({
             website_id: websitesData.items[0].id,
-            interval: 'hour',
           })
           
           // Transform performance data for chart
@@ -236,15 +235,15 @@ export default function DashboardPage() {
             {alerts.length > 0 ? (
               alerts.map((alert) => {
                 const Icon =
-                  alert.severity === "critical"
+                  alert.severity === AlertSeverity.CRITICAL || alert.severity === AlertSeverity.HIGH
                     ? AlertCircle
-                    : alert.severity === "warning"
+                    : alert.severity === AlertSeverity.MEDIUM
                       ? AlertTriangle
                       : CheckCircle
                 const color =
-                  alert.severity === "critical"
+                  alert.severity === AlertSeverity.CRITICAL || alert.severity === AlertSeverity.HIGH
                     ? "text-red-500"
-                    : alert.severity === "warning"
+                    : alert.severity === AlertSeverity.MEDIUM
                       ? "text-yellow-500"
                       : "text-green-500"
 

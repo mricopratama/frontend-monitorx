@@ -4,7 +4,7 @@ import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { websiteService, apiClient } from "@/lib/api"
-import { Website, MonitoringLog } from "@/lib/api/types"
+import { Website, MonitoringLog, WebsiteStatus } from "@/lib/types/api"
 import { config } from "@/lib/config"
 
 export default function MonitorPage() {
@@ -140,18 +140,18 @@ export default function MonitorPage() {
       // Use latest log to determine status
       const latestLog = logs[0]
       if (latestLog.status_code >= 200 && latestLog.status_code < 300) {
-        determinedStatus = "up"
+        determinedStatus = WebsiteStatus.UP
       } else {
-        determinedStatus = "down"
+        determinedStatus = WebsiteStatus.DOWN
       }
     } else if (website.last_check && website.last_check !== "Never") {
       // If website has been checked but no logs visible, assume monitoring
-      determinedStatus = "unknown"
+      determinedStatus = WebsiteStatus.UNKNOWN
     }
   }
 
   const statusText = determinedStatus?.toUpperCase() || (website.last_check === "Never" ? "PENDING" : "UNKNOWN")
-  const statusColor = determinedStatus === "up" ? "green" : determinedStatus === "down" ? "red" : "yellow"
+  const statusColor = determinedStatus === WebsiteStatus.UP ? "green" : determinedStatus === WebsiteStatus.DOWN ? "red" : "yellow"
 
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6">

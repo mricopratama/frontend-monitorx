@@ -49,6 +49,20 @@ export const authService = {
   },
 
   /**
+   * Update user profile
+   */
+  async updateProfile(data: { name?: string; email?: string }): Promise<User> {
+    return await apiClient.put<User>('/auth/profile', data);
+  },
+
+  /**
+   * Change password
+   */
+  async changePassword(data: { current_password: string; new_password: string }): Promise<void> {
+    return await apiClient.put<void>('/auth/password', data);
+  },
+
+  /**
    * Refresh access token
    */
   async refreshToken(refreshToken: string): Promise<AuthResponse> {

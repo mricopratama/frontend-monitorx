@@ -2,43 +2,41 @@
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { FormField } from "@/components/ui/form-field"
 import Link from "next/link"
 import { useState } from "react"
 import { Mail, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { loginSchema, type LoginFormData } from "@/lib/validations/schemas"
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
   const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
   const { login } = useAuth()
   const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    // Validation
-    if (!email || !password) {
-      setError("Please fill in all fields")
-      return
-    }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+  })
 
+  const onSubmit = async (data: LoginFormData) => {
     try {
-      setLoading(true)
       setError("")
       
-      await login({ email, password })
+      await login(data)
       
       // Redirect to dashboard on success
       router.push("/dashboard")
     } catch (err: any) {
       console.error("Login error:", err)
       setError(err.response?.data?.message || err.message || "Invalid email or password")
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -76,26 +74,33 @@ export default function Login() {
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-5 mb-6">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 mb-6">
               <div>
-                <label className="block text-sm font-medium mb-2">Email Address</label>
+                <label className="block text-sm font-medium mb-2">
+                  Email Address
+                  <span className="text-destructive ml-1">*</span>
+                </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
                     type="email"
                     placeholder="name@company.com"
-                    className="h-12 pl-10 bg-background border-border/50"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={loading}
-                    required
+                    className={`h-12 pl-10 bg-background border-border/50 ${errors.email ? 'border-destructive' : ''}`}
+                    disabled={isSubmitting}
+                    {...register("email")}
                   />
                 </div>
+                {errors.email && (
+                  <p className="text-sm text-destructive mt-1">{errors.email.message}</p>
+                )}
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium">Password</label>
+                  <label className="block text-sm font-medium">
+                    Password
+                    <span className="text-destructive ml-1">*</span>
+                  </label>
                   <Link href="#" className="text-sm text-blue-500 hover:underline">
                     Forgot Password?
                   </Link>
@@ -104,29 +109,30 @@ export default function Login() {
                   <Input
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    className="h-12 pr-10 bg-background border-border/50"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={loading}
-                    required
+                    className={`h-12 pr-10 bg-background border-border/50 ${errors.password ? 'border-destructive' : ''}`}
+                    disabled={isSubmitting}
+                    {...register("password")}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    disabled={loading}
+                    disabled={isSubmitting}
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                {errors.password && (
+                  <p className="text-sm text-destructive mt-1">{errors.password.message}</p>
+                )}
               </div>
 
               <Button 
                 type="submit"
                 className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-base font-semibold"
-                disabled={loading}
+                disabled={isSubmitting}
               >
-                {loading ? (
+                {isSubmitting ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     Signing In...
