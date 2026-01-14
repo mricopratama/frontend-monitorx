@@ -2,52 +2,17 @@
 
 import type React from "react"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, Suspense } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Search, Settings, Bell, Menu, X, Sun, Moon, Monitor } from "lucide-react"
+import { Search, Settings, Bell, Menu, X } from "lucide-react"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { LoadingFallback } from "@/components/loading-fallback"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system')
   const pathname = usePathname()
-
-  useEffect(() => {
-    // Load theme from localStorage
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' || 'system'
-    setTheme(savedTheme)
-    applyTheme(savedTheme)
-  }, [])
-
-  const applyTheme = (newTheme: 'light' | 'dark' | 'system') => {
-    const root = document.documentElement
-    
-    if (newTheme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-      root.classList.toggle('dark', systemTheme === 'dark')
-    } else {
-      root.classList.toggle('dark', newTheme === 'dark')
-    }
-  }
-
-  const cycleTheme = () => {
-    const themes: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system']
-    const currentIndex = themes.indexOf(theme)
-    const nextTheme = themes[(currentIndex + 1) % themes.length]
-    setTheme(nextTheme)
-    localStorage.setItem('theme', nextTheme)
-    applyTheme(nextTheme)
-  }
-
-  const getThemeIcon = () => {
-    switch (theme) {
-      case 'light': return <Sun size={20} />
-      case 'dark': return <Moon size={20} />
-      case 'system': return <Monitor size={20} />
-    }
-  }
 
   return (
     <div className="flex h-screen bg-background">
@@ -69,9 +34,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           <NavLink href="/dashboard/alerts" icon="●" label="Alerts" active={pathname === "/dashboard/alerts"} />
           <NavLink href="/dashboard/logs" icon="▬" label="Logs" active={pathname === "/dashboard/logs"} />
           <NavLink href="/dashboard/analytics" icon="▨" label="Analytics" active={pathname === "/dashboard/analytics"} />
-          <NavLink href="/dashboard/settings" icon="⚙" label="Settings" active={pathname === "/dashboard/settings"} />
 
+          <div className="text-xs font-semibold text-muted-foreground mb-4 mt-6">INTEGRATIONS</div>
+          <NavLink href="/dashboard/webhooks" icon="🔗" label="Webhooks" active={pathname === "/dashboard/webhooks"} />
+          <NavLink href="/dashboard/notifications" icon="📧" label="Notifications" active={pathname === "/dashboard/notifications"} />
+          
           <div className="text-xs font-semibold text-muted-foreground mb-4 mt-6">SYSTEM</div>
+          <NavLink href="/dashboard/settings" icon="⚙" label="Settings" active={pathname === "/dashboard/settings"} />
           <NavLink href="/dashboard/api-status" icon="◎" label="API Status" active={pathname === "/dashboard/api-status"} />
           <NavLink href="/dashboard/support" icon="?" label="Support" active={pathname === "/dashboard/support"} />
         </nav>
@@ -103,13 +72,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-4">
-            <button
-              onClick={cycleTheme}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              title={`Current theme: ${theme}`}
-            >
-              {getThemeIcon()}
-            </button>
+            <ThemeToggle />
             <button className="text-muted-foreground hover:text-foreground">
               <Bell size={20} />
             </button>

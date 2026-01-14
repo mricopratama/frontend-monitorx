@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { PerformanceCharts } from "@/components/performance-charts"
 import { 
   TrendingUp, 
   Activity, 
@@ -31,6 +33,7 @@ import { analyticsService, websiteService } from "@/lib/api"
 
 export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true)
+  const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('7d')
   const [stats, setStats] = useState({
     totalWebsites: 0,
     totalChecks: 0,
@@ -112,9 +115,35 @@ export default function AnalyticsPage() {
   return (
     <div className="p-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Analytics Dashboard</h1>
-        <p className="text-gray-600">Comprehensive monitoring statistics and insights</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Analytics Dashboard</h1>
+          <p className="text-gray-600 dark:text-gray-400">Comprehensive monitoring statistics and insights</p>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Button
+            variant={timeRange === '24h' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setTimeRange('24h')}
+          >
+            24 Hours
+          </Button>
+          <Button
+            variant={timeRange === '7d' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setTimeRange('7d')}
+          >
+            7 Days
+          </Button>
+          <Button
+            variant={timeRange === '30d' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setTimeRange('30d')}
+          >
+            30 Days
+          </Button>
+        </div>
       </div>
 
       {/* Stats Overview */}
@@ -171,6 +200,10 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Charts */}
+      <div className="mb-8">
+        <PerformanceCharts timeRange={timeRange} />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Response Time Chart */}
         <Card className="p-6">
@@ -178,15 +211,31 @@ export default function AnalyticsPage() {
           {responseTimeData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={responseTimeData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                <YAxis />
-                <Tooltip />
+                <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                <XAxis 
+                  dataKey="name" 
+                  angle={-45} 
+                  textAnchor="end" 
+                  height={100}
+                  tick={{ fill: 'currentColor' }}
+                  className="text-xs"
+                />
+                <YAxis 
+                  tick={{ fill: 'currentColor' }}
+                  className="text-xs"
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                />
                 <Bar dataKey="time" fill="#3b82f6" />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-center text-gray-500 py-12">No data available</p>
+            <p className="text-center text-gray-500 dark:text-gray-400 py-12">No data available</p>
           )}
         </Card>
 
@@ -196,15 +245,31 @@ export default function AnalyticsPage() {
           {uptimeData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={uptimeData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                <YAxis />
-                <Tooltip />
+                <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                <XAxis 
+                  dataKey="name" 
+                  angle={-45} 
+                  textAnchor="end" 
+                  height={100}
+                  tick={{ fill: 'currentColor' }}
+                  className="text-xs"
+                />
+                <YAxis 
+                  tick={{ fill: 'currentColor' }}
+                  className="text-xs"
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                />
                 <Bar dataKey="uptime" fill="#10b981" name="Uptime %" />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-center text-gray-500 py-12">No data available</p>
+            <p className="text-center text-gray-500 dark:text-gray-400 py-12">No data available</p>
           )}
         </Card>
       </div>

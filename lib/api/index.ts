@@ -11,6 +11,10 @@ export { analyticsService } from './analytics.service';
 export { healthService } from './health.service';
 export { exportService } from './export.service';
 export { tagService } from './tag.service';
+export { settingsService } from './settings.service';
+export { webhookService } from './webhook.service';
 
 export type { Tag, TagWithCount, CreateTagRequest, UpdateTagRequest } from './tag.service';
+export type { UserSettings, UpdateUserSettingsRequest } from './settings.service';
+export type { Webhook, CreateWebhookRequest, UpdateWebhookRequest, WebhookDelivery } from './webhook.service';
 export { apiClient } from './client';

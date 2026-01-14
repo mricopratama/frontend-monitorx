@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Loader2, CheckCircle, XCircle, Filter } from "lucide-react"
+import { Loader2, CheckCircle, XCircle, Filter, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { monitoringService, websiteService } from "@/lib/api"
 import { MonitoringLog, Website } from "@/lib/types/api"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,7 @@ export default function LogsPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "up" | "down">("all")
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [pageSize, setPageSize] = useState(50)
 
   useEffect(() => {
     loadWebsites()
@@ -22,7 +23,7 @@ export default function LogsPage() {
 
   useEffect(() => {
     loadLogs()
-  }, [page, selectedWebsite, statusFilter])
+  }, [page, selectedWebsite, statusFilter, pageSize])
 
   const loadWebsites = async () => {
     try {
@@ -36,7 +37,7 @@ export default function LogsPage() {
   const loadLogs = async () => {
     try {
       setLoading(true)
-      const params: any = { page, page_size: 50 }
+      const params: any = { page, page_size: pageSize }
       
       if (selectedWebsite !== "all") {
         params.website_id = selectedWebsite
@@ -50,6 +51,11 @@ export default function LogsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize)
+    setPage(1) // Reset to first page when changing page size
   }
 
   const filteredLogs = logs.filter((log) => {
@@ -190,14 +196,76 @@ export default function LogsPage() {
         </div>
 
         {totalPages > 1 && (
-          <div className="flex justify-center gap-2 mt-6">
-            <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(page - 1)}>
-              Previous
-            </Button>
-            <span className="flex items-center px-4 text-sm">Page {page} of {totalPages}</span>
-            <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage(page + 1)}>
-              Next
-            </Button>
+          <div className="flex items-center justify-between mt-6 px-4 py-3 bg-card border rounded-lg">
+            {/* Page Size Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Items per page:</span>
+              <div className="flex gap-1">
+                {[20, 50, 100].map((size) => (
+                  <Button
+                    key={size}
+                    variant={pageSize === size ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handlePageSizeChange(size)}
+                  >
+                    {size}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 1}
+                onClick={() => setPage(1)}
+                title="First page"
+              >
+                <ChevronsLeft className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 1}
+                onClick={() => setPage(page - 1)}
+                title="Previous page"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              
+              <div className="flex items-center gap-2 px-4">
+                <span className="text-sm text-muted-foreground">
+                  Page <span className="font-semibold text-foreground">{page}</span> of{" "}
+                  <span className="font-semibold text-foreground">{totalPages}</span>
+                </span>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === totalPages}
+                onClick={() => setPage(page + 1)}
+                title="Next page"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === totalPages}
+                onClick={() => setPage(totalPages)}
+                title="Last page"
+              >
+                <ChevronsRight className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* Total Count */}
+            <div className="text-sm text-muted-foreground">
+              Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, stats.total)} of {stats.total}
+            </div>
           </div>
         )}
       </div>

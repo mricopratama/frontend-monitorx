@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Search, Plus, Loader2, AlertCircle, Pencil, Trash2, ExternalLink, CheckCircle, XCircle } from "lucide-react"
-import { websiteService } from "@/lib/api"
+import { Search, Plus, Loader2, AlertCircle, Pencil, Trash2, ExternalLink, CheckCircle, XCircle, Filter, ArrowUpDown, Tag as TagIcon } from "lucide-react"
+import { websiteService, tagService } from "@/lib/api"
 import { Website, WebsiteStatus, CreateWebsiteRequest } from "@/lib/types/api"
+import { Tag } from "@/lib/api/tag.service"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -20,9 +21,15 @@ import { useWebSocket } from "@/lib/hooks/use-websocket"
 
 export default function WebsitesPage() {
   const [websites, setWebsites] = useState<Website[]>([])
+  const [tags, setTags] = useState<Tag[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
+  const [sortBy, setSortBy] = useState<string>("created_at")
+  const [sortOrder, setSortOrder] = useState<string>("desc")
+  const [showFilterDialog, setShowFilterDialog] = useState(false)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -48,14 +55,44 @@ export default function WebsitesPage() {
 
   useEffect(() => {
     loadWebsites()
-  }, [])
+    loadTags()
+  }, [searchQuery, statusFilter, selectedTagIds, sortBy, sortOrder])
+
+  const loadTags = async () => {
+    try {
+      const data = await tagService.getAll()
+      setTags(data?.items || [])
+    } catch (err) {
+      console.error("Failed to load tags:", err)
+    }
+  }
 
   const loadWebsites = async () => {
     try {
       setLoading(true)
       setError("")
-      const data = await websiteService.getAll()
-      setWebsites(data?.items || [])
+      
+      // Build query parameters
+      const params = new URLSearchParams()
+      if (searchQuery) params.append('search', searchQuery)
+      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter)
+      if (selectedTagIds.length > 0) params.append('tags', selectedTagIds.join(','))
+      if (sortBy) params.append('sort_by', sortBy)
+      if (sortOrder) params.append('sort_order', sortOrder)
+      
+      const queryString = params.toString()
+      const url = queryString ? `/websites?${queryString}` : '/websites'
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${url}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      })
+      
+      if (!response.ok) throw new Error('Failed to fetch websites')
+      
+      const result = await response.json()
+      setWebsites(result.data || [])
     } catch (err: any) {
       console.error("Failed to load websites:", err)
       setError(err.response?.data?.message || "Failed to load websites")
@@ -139,11 +176,19 @@ export default function WebsitesPage() {
     setShowDeleteDialog(true)
   }
 
-  const filteredWebsites = websites.filter(
-    (w) =>
-      w.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      w.url.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const toggleTag = (tagId: string) => {
+    setSelectedTagIds(prev =>
+      prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId]
+    )
+  }
+
+  const clearFilters = () => {
+    setSearchQuery("")
+    setStatusFilter("all")
+    setSelectedTagIds([])
+    setSortBy("created_at")
+    setSortOrder("desc")
+  }
 
   const statsData = {
     total: websites.length,
@@ -220,8 +265,8 @@ export default function WebsitesPage() {
 
       {/* Websites Table */}
       <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="relative flex-1 max-w-md">
+        <div className="flex items-center gap-4 mb-4 flex-wrap">
+          <div className="relative flex-1 min-w-[200px] max-w-md">
             <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
               size={18}
@@ -234,6 +279,71 @@ export default function WebsitesPage() {
               className="pl-10"
             />
           </div>
+
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 bg-background border border-input rounded-md text-sm"
+          >
+            <option value="all">All Status</option>
+            <option value="up">Up</option>
+            <option value="down">Down</option>
+          </select>
+
+          {/* Sort */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="px-3 py-2 bg-background border border-input rounded-md text-sm"
+          >
+            <option value="created_at">Sort: Date Created</option>
+            <option value="name">Sort: Name</option>
+            <option value="url">Sort: URL</option>
+            <option value="uptime">Sort: Uptime</option>
+            <option value="response_time">Sort: Response Time</option>
+          </select>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+          >
+            <ArrowUpDown className="h-4 w-4 mr-2" />
+            {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+          </Button>
+
+          <Button variant="outline" size="sm" onClick={() => setShowFilterDialog(true)}>
+            <TagIcon className="h-4 w-4 mr-2" />
+            Tags ({selectedTagIds.length})
+          </Button>
+
+          {(searchQuery || statusFilter !== 'all' || selectedTagIds.length > 0 || sortBy !== 'created_at' || sortOrder !== 'desc') && (
+            <Button variant="ghost" size="sm" onClick={clearFilters}>
+              Clear Filters
+            </Button>
+          )}
+        </div>
+
+        {/* Active Filters Display */}
+        {selectedTagIds.length > 0 && (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {selectedTagIds.map(tagId => {
+              const tag = tags.find(t => t.id === tagId)
+              return tag ? (
+                <span key={tagId} className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-md flex items-center gap-1">
+                  {tag.name}
+                  <button onClick={() => toggleTag(tagId)} className="hover:text-primary/70">×</button>
+                </span>
+              ) : null
+            })}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-muted-foreground">
+            Showing {websites.length} website{websites.length !== 1 ? 's' : ''}
+          </p>
           <div
             className={`flex items-center gap-2 text-sm ${
               isConnected ? "text-green-500" : "text-gray-500"
@@ -264,8 +374,23 @@ export default function WebsitesPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredWebsites.length > 0 ? (
-                filteredWebsites.map((website) => (
+              {websites.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-muted-foreground">
+                    {searchQuery || statusFilter !== 'all' || selectedTagIds.length > 0 ? (
+                      <>
+                        <p className="mb-2">No websites match your filters</p>
+                        <Button variant="outline" size="sm" onClick={clearFilters}>
+                          Clear Filters
+                        </Button>
+                      </>
+                    ) : (
+                      "No websites yet. Click 'Add Website' to start monitoring."
+                    )}
+                  </td>
+                </tr>
+              ) : (
+                websites.map((website) => (
                   <tr
                     key={website.id}
                     className="border-b border-border hover:bg-secondary/50 transition-colors"
@@ -338,21 +463,6 @@ export default function WebsitesPage() {
                     </td>
                   </tr>
                 ))
-              ) : (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-muted-foreground">
-                    {searchQuery ? "No websites found matching your search." : "No websites yet."}
-                    {!searchQuery && (
-                      <Button
-                        variant="link"
-                        onClick={() => setShowAddDialog(true)}
-                        className="ml-2"
-                      >
-                        Add your first website
-                      </Button>
-                    )}
-                  </td>
-                </tr>
               )}
             </tbody>
           </table>
@@ -542,6 +652,43 @@ export default function WebsitesPage() {
             >
               {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               {submitting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tag Filter Dialog */}
+      <Dialog open={showFilterDialog} onOpenChange={setShowFilterDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Filter by Tags</DialogTitle>
+            <DialogDescription>
+              Select tags to filter your websites
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {tags.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No tags available</p>
+            ) : (
+              tags.map(tag => (
+                <label key={tag.id} className="flex items-center gap-2 p-2 hover:bg-muted rounded cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedTagIds.includes(tag.id)}
+                    onChange={() => toggleTag(tag.id)}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">{tag.name}</span>
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    ({tag.website_count || 0})
+                  </span>
+                </label>
+              ))
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFilterDialog(false)}>
+              Done
             </Button>
           </DialogFooter>
         </DialogContent>
